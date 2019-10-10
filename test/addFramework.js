@@ -62,8 +62,9 @@ function frameworkSearchPaths(proj) {
 exports.addFramework = {
     'should return a pbxFile': function (test) {
         var newFile = proj.addFramework('libsqlite3.dylib');
-
-        test.equal(newFile.constructor, pbxFile);
+    
+        // test.equal(newFile.constructor, pbxFile); // ported to typescript and needed to update this.
+        test.ok(newFile instanceof pbxFile);
         test.done()
     },
     'should set a fileRef on the pbxFile': function (test) {

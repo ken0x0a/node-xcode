@@ -15,11 +15,15 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
+    "@types/node": "^12.7.9",
+    "@types/uuid": "^3.4.5",
     "nodeunit": "^0.11.3",
-    "pegjs": "^0.10.0"
+    "pegjs": "^0.10.0",
+    "typescript": "^3.6.3"
   },
   "scripts": {
-    "pegjs": "node_modules/.bin/pegjs lib/parser/pbxproj.pegjs",
+    "pegjs": "node_modules/.bin/pegjs src/parser/pbxproj.pegjs",
+    "build": "bash src/build.sh",
     "test": "node_modules/.bin/nodeunit test/parser test"
   },
   "license": "Apache-2.0",
@@ -43,6 +47,9 @@
     },
     {
       "name": "Bob Easterday"
+    }, 
+    {
+      "name": "David Ball"
     }
   ]
 }

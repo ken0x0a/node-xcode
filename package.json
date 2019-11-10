@@ -16,8 +16,10 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
+    "@types/node": "12.12.7",
     "nodeunit": "^0.11.3",
-    "pegjs": "^0.10.0"
+    "pegjs": "^0.10.0",
+    "typescript": "3.7.2"
   },
   "scripts": {
     "pegjs": "node_modules/.bin/pegjs lib/parser/pbxproj.pegjs",

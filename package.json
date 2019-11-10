@@ -3,7 +3,8 @@
   "name": "xcode",
   "description": "parser for xcodeproj/project.pbxproj files",
   "version": "2.0.1-dev",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "files": ["lib"],
   "repository": {
     "url": "https://github.com/apache/cordova-node-xcode.git"
   },

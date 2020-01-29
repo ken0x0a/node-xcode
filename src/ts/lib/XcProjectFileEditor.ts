@@ -204,7 +204,9 @@ function pbxCopyFilesBuildPhaseObj(
         static_library: 'products_directory',
         unit_test_bundle: 'wrapper',
         watch_app: 'wrapper',
-        watch_extension: 'plugins'
+        watch2_app: 'products_directory',
+        watch_extension: 'plugins',
+        watch2_extension: 'plugins'
     }
 
     var SUBFOLDERSPEC_BY_DESTINATION: { [destination: string]: number } = {
@@ -368,7 +370,9 @@ function producttypeForTargettype(targetType: TARGET_TYPE): PRODUCT_TYPE {
         static_library: 'com.apple.product-type.library.static',
         unit_test_bundle: 'com.apple.product-type.bundle.unit-test',
         watch_app: 'com.apple.product-type.application.watchapp',
-        watch_extension: 'com.apple.product-type.watchkit-extension'
+        watch2_app: 'com.apple.product-type.application.watchapp2',
+        watch_extension: 'com.apple.product-type.watchkit-extension',
+        watch2_extension: 'com.apple.product-type.watchkit2-extension'
     };
 
     const pt = PRODUCTTYPE_BY_TARGETTYPE[targetType];
@@ -379,9 +383,9 @@ function producttypeForTargettype(targetType: TARGET_TYPE): PRODUCT_TYPE {
         throw new Error(`No product type for target type of '${targetType}'`);
 }
 
-function filetypeForProducttype(productType: PRODUCT_TYPE): XC_FILETYPE {
+function filetypeForProductType(productType: PRODUCT_TYPE): XC_FILETYPE {
 
-    const FILETYPE_BY_PRODUCTTYPE: { [productType: string]: XC_FILETYPE } = {
+    const FILETYPE_BY_PRODUCT_TYPE: { [productType: string]: XC_FILETYPE } = {
         'com.apple.product-type.application': 'wrapper.application',
         'com.apple.product-type.app-extension': 'wrapper.app-extension',
         'com.apple.product-type.bundle': 'wrapper.plug-in',
@@ -391,7 +395,9 @@ function filetypeForProducttype(productType: PRODUCT_TYPE): XC_FILETYPE {
         'com.apple.product-type.library.static': 'archive.ar',
         'com.apple.product-type.bundle.unit-test': 'wrapper.cfbundle',
         'com.apple.product-type.application.watchapp': 'wrapper.application',
-        'com.apple.product-type.watchkit-extension': 'wrapper.app-extension'
+        'com.apple.product-type.application.watchapp2': 'wrapper.application',
+        'com.apple.product-type.watchkit-extension': 'wrapper.app-extension',
+        'com.apple.product-type.watchkit2-extension': 'wrapper.app-extension'
     };
 
     //  I am pretty sure the original version of this added the double quotes.
@@ -409,7 +415,7 @@ function filetypeForProducttype(productType: PRODUCT_TYPE): XC_FILETYPE {
     // 'com.apple.product-type.watchkit-extension': '"wrapper.app-extension"'
 
 
-    return FILETYPE_BY_PRODUCTTYPE[productType]
+    return FILETYPE_BY_PRODUCT_TYPE[productType]
 }
 
 /**
@@ -2385,7 +2391,7 @@ export class XcProjectFileEditor extends EventEmitter {
 
         // Product: Create
         const productName: string = targetName;
-        const productFileType: XC_FILETYPE = filetypeForProducttype(productType);
+        const productFileType: XC_FILETYPE = filetypeForProductType(productType);
         const productFile: PbxFile = this.addProductFile(productName, { group: 'Copy Files', 'target': targetUuid, 'explicitFileType': productFileType });
         //            productFileName = productFile.basename;
 
@@ -2415,7 +2421,7 @@ export class XcProjectFileEditor extends EventEmitter {
         // Product: Embed (only for "extension"-type targets)
         if (targetType === 'app_extension') {
 
-            //  TODO:  Evaluate if this is sound.
+            // TODO: Evaluate if this is sound.
 
             // Create CopyFiles phase in first target
             this.addBuildPhase([], 'PBXCopyFilesBuildPhase', 'Copy Files', this.getFirstTarget().uuid, targetType)
@@ -2425,13 +2431,42 @@ export class XcProjectFileEditor extends EventEmitter {
 
             // this.addBuildPhaseToTarget(newPhase.buildPhase, this.getFirstTarget().uuid)
 
-        };
+        } else if (targetType === 'watch2_app') {
+            // Create CopyFiles phase in first target
+            this.addBuildPhase(
+                [targetName + '.app'],
+                'PBXCopyFilesBuildPhase',
+                'Embed Watch Content',
+                this.getFirstTarget().uuid,
+                targetType,
+                '"$(CONTENTS_FOLDER_PATH)/Watch"'
+            );
+        } else if (targetType === 'watch2_extension') {
+            // Create CopyFiles phase in watch target (if exists)
+            var watch2Target = this.getTarget(producttypeForTargettype('watch2_app'));
+            if (watch2Target) {
+                this.addBuildPhase(
+                    [targetName + '.appex'],
+                    'PBXCopyFilesBuildPhase',
+                    'Embed App Extensions',
+                    watch2Target.uuid,
+                    targetType
+                );
+            }
+        }
 
         // Target: Add uuid to root project
         this.addToPbxProjectSection(target);
 
-        // Target: Add dependency for this target to first (main) target
-        this.addTargetDependency(this.getFirstTarget().uuid, [target.uuid]);
+        // Target: Add dependency for this target to other targets
+        if (targetType === 'watch2_extension') {
+            var watch2Target = this.getTarget(producttypeForTargettype('watch2_app'));
+            if (watch2Target) {
+                this.addTargetDependency(watch2Target.uuid, [target.uuid]);
+            }
+        } else {
+            this.addTargetDependency(this.getFirstTarget().uuid, [target.uuid]);
+        }
 
         // Return target on success
         return target;
@@ -2474,7 +2509,7 @@ export class XcProjectFileEditor extends EventEmitter {
      */
     getFirstTarget(): { uuid: XC_PROJ_UUID, firstTarget: PBXNativeTarget } {
 
-        // Get first targets UUID
+        // Get first target's UUID
         const firstTargetUuid: XC_PROJ_UUID = this.getFirstProject()['firstProject']['targets'][0].value;
 
         // Get first pbxNativeTarget
@@ -2484,6 +2519,27 @@ export class XcProjectFileEditor extends EventEmitter {
             uuid: firstTargetUuid,
             firstTarget: firstTarget
         }
+    }
+
+    getTarget(productType: string) {
+        // Find target by product type
+        var targets = this.getFirstProject()['firstProject']['targets'];
+        var nativeTargets = this.pbxNativeTargetSection();
+        for (var i = 0; i < targets.length; i++) {
+            var target = targets[i];
+            var targetUuid = target.value;
+            const _nativeTarget = typeof nativeTargets[targetUuid]
+            if (typeof _nativeTarget !== 'string' && _nativeTarget['productType'] === '"' + productType + '"') {
+                // Get pbxNativeTarget
+                var nativeTarget = this.pbxNativeTargetSection()[targetUuid];
+                return {
+                    uuid: targetUuid,
+                    target: nativeTarget
+                };
+            }
+        }
+    
+        return null;
     }
 
     /*** NEW ***/

@@ -322,7 +322,7 @@ export declare class XcProjectFileEditor extends EventEmitter {
      * build configurations had the same product name so this works in these
      * cases.  I do not know if it works in all cases.
      */
-    readonly productName: string;
+    get productName(): string;
     hasFile(filePath: string): PBXFileReference | false;
     addTarget(name: string, type: TARGET_TYPE, subfolder: string): INativeTargetWrapper;
     /**
@@ -344,6 +344,10 @@ export declare class XcProjectFileEditor extends EventEmitter {
         uuid: XC_PROJ_UUID;
         firstTarget: PBXNativeTarget;
     };
+    getTarget(productType: string): {
+        uuid: string;
+        target: string | PBXNativeTarget;
+    } | null;
     /*** NEW ***/
     /**
      *

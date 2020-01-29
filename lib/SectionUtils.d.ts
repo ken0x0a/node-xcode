@@ -1,6 +1,9 @@
 import { XC_PROJ_UUID, XC_COMMENT_KEY } from './IXcodeProjFileSimpleTypes';
 import { PBXObjectBase } from './IXcodeProjFileObjTypes';
 import { TypedSection, SectionDictUuidToObj } from './IXcodeProjFile';
+/**
+ * Utilities that have to do with sections, objects, keys, and comments.
+ */
 export declare class SectionUtils {
     /**
      * Sections have UUIDs as keys and comment keys wich are the UUID followed by _comment

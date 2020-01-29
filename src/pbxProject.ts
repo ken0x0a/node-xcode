@@ -76,6 +76,7 @@ class pbxProject extends EventEmitter {
     var sections = this.hash.project.objects,
       uuids = [],
       section;
+    let key: string | number;
 
     for (key in sections) {
       section = sections[key];
@@ -1788,11 +1789,11 @@ class pbxProject extends EventEmitter {
   }
 
   getPBXGroupByKey(key) {
-    return this.hash.project.objects["PBXGroup"][key];
+    return this.hash.project.objects["PBXGroup"]?.[key];
   }
 
   getPBXVariantGroupByKey(key) {
-    return this.hash.project.objects["PBXVariantGroup"][key];
+    return this.hash.project.objects["PBXVariantGroup"]?.[key];
   }
 
   findPBXGroupKeyAndType(criteria, groupType) {
@@ -2263,4 +2264,6 @@ function filetypeForProducttype(productType) {
   return FILETYPE_BY_PRODUCTTYPE[productType];
 }
 
-export = pbxProject;
+export = function(filename: string) {
+  return new pbxProject(filename);
+};
